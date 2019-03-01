@@ -37,11 +37,8 @@ import org.lwjgl.Version;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.opengl.GL;
 
-import com.sun.jna.NativeLibrary;
 import com.sun.jna.Pointer;
 
-import uk.co.caprica.vlcj.binding.LibC;
-import uk.co.caprica.vlcj.binding.RuntimeUtil;
 import uk.co.caprica.vlcj.binding.internal.libvlc_video_engine_t;
 import uk.co.caprica.vlcj.factory.MediaPlayerFactory;
 import uk.co.caprica.vlcj.factory.discovery.NativeDiscovery;
@@ -56,12 +53,6 @@ import uk.co.caprica.vlcj.player.embedded.videosurface.videoengine.VideoEngineCa
  * This example was adapted from the HelloWorld example provided in the LWJGL bundle.
  */
 public class VideoEngineCallbackDemo {
-
-	static {
-		String path = "/disks/data/build/install/test";
-		NativeLibrary.addSearchPath(RuntimeUtil.getLibVlcLibraryName(), path);
-		LibC.INSTANCE.setenv("VLC_PLUGIN_PATH", path + "/plugins", 1);
-	}
 
 	/**
 	 * This application.
