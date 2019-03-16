@@ -18,3 +18,7 @@ Resizing Video
 
 Resizing video is a *client* problem. The OpenGL callbacks render at the video's intrinsic dimensions, if you need
 resize behaviour then that is a problem that you must solve in your own application.
+
+This example implements resizing (optionally via a flag in the code) by resetting the viewport to match the video
+size in a framebuffer size callback.
+
