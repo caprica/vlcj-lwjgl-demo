@@ -66,6 +66,12 @@ import uk.co.caprica.vlcj.player.embedded.videosurface.videoengine.VideoEngineCa
  */
 public class VideoEngineCallbackDemo {
 
+    static {
+        String path = "/disks/data/build/install/test";
+        NativeLibrary.addSearchPath(RuntimeUtil.getLibVlcLibraryName(), path);
+        LibC.INSTANCE.setenv("VLC_PLUGIN_PATH", path + "/plugins", 1);
+    }
+
     /**
      * Flag if resize behaviour should be enabled.
      */
@@ -204,7 +210,7 @@ public class VideoEngineCallbackDemo {
 
         glfwSetWindowPos(window, 200, 200);
         glfwMakeContextCurrent(window); // Make the OpenGL context current
-        glfwSwapInterval(1); // Enable v-sync
+//        glfwSwapInterval(1); // Enable v-sync
         glfwShowWindow(window);
     }
 
@@ -226,11 +232,19 @@ public class VideoEngineCallbackDemo {
         // Run the rendering loop until the user has attempted to close the window or has pressed the ESCAPE key
         while (!glfwWindowShouldClose(window)) {
             // Clear the framebuffer (no need to since the video will render the whole surface every frame)
-//			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT); 
+//			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
 //			glfwSwapBuffers(window);
 
             // Poll for window events - the key callback above will only be invoked during this call
             glfwPollEvents();
+
+            // Implement the render/timing loop however you want - if you don't sleep the loop will run as fast as it
+            // can and consume 100% of a CPU core
+            try {
+                Thread.sleep(1000 / 60);
+            }
+            catch (Exception e) {
+            }
         }
     }
 
