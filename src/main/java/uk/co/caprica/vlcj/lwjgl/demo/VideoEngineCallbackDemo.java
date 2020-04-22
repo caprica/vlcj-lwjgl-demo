@@ -46,6 +46,8 @@ import com.sun.jna.Pointer;
 
 import uk.co.caprica.vlcj.binding.LibC;
 import uk.co.caprica.vlcj.binding.RuntimeUtil;
+import uk.co.caprica.vlcj.binding.internal.libvlc_video_output_cfg_t;
+import uk.co.caprica.vlcj.binding.internal.libvlc_video_render_cfg_t;
 import uk.co.caprica.vlcj.player.embedded.videosurface.videoengine.VideoEngine;
 import uk.co.caprica.vlcj.factory.MediaPlayerFactory;
 import uk.co.caprica.vlcj.factory.discovery.NativeDiscovery;
@@ -169,7 +171,7 @@ public class VideoEngineCallbackDemo {
         glfwWindowHint(GLFW_RESIZABLE, enableResize ? GLFW_TRUE : GLFW_FALSE);
 
         // Create the window
-        window = glfwCreateWindow(800, 600, "vlcj OpenGL callback rendering", NULL, NULL);
+        window = glfwCreateWindow(800, 450, "vlcj OpenGL callback rendering", NULL, NULL);
         if (window == NULL) {
             throw new RuntimeException("Failed to create the GLFW window");
         }
@@ -208,7 +210,7 @@ public class VideoEngineCallbackDemo {
             }
         });
 
-        glfwSetWindowPos(window, 200, 200);
+        glfwSetWindowPos(window, 10, 10);
         glfwMakeContextCurrent(window); // Make the OpenGL context current
 //        glfwSwapInterval(1); // Enable v-sync
         glfwShowWindow(window);
@@ -294,12 +296,13 @@ public class VideoEngineCallbackDemo {
         }
 
         @Override
-        public void onUpdateOutput(Pointer opaque, int width, int height) {
-            glfwSetWindowPos(window, 200, 200);
-            glfwSetWindowSize(window, width, height);
+        public int onUpdateOutput(Pointer opaque, libvlc_video_render_cfg_t renderConfiguration, libvlc_video_output_cfg_t outputConfiguration) {
+            glfwSetWindowPos(window, 10, 10);
+            glfwSetWindowSize(window, renderConfiguration.width, renderConfiguration.height);
             if (preserveAspectRatio) {
-                glfwSetWindowAspectRatio(window, width, height);
+                glfwSetWindowAspectRatio(window, renderConfiguration.width, renderConfiguration.height);
             }
+            return 0;
         }
     }
 
@@ -310,6 +313,8 @@ public class VideoEngineCallbackDemo {
      */
     public static void main(String[] args) {
         System.out.println(String.format("LWJGL %s", Version.getVersion()));
+
+        args = new String[] {"/home/mark/sekiro.mp4"};
 
         if (args.length != 1) {
             System.out.println("Specify an MRL to play");
