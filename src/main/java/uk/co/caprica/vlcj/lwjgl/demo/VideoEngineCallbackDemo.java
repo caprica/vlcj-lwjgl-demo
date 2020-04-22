@@ -1,5 +1,20 @@
 package uk.co.caprica.vlcj.lwjgl.demo;
 
+import com.sun.jna.Pointer;
+import org.lwjgl.Version;
+import org.lwjgl.glfw.GLFWErrorCallback;
+import org.lwjgl.glfw.GLFWFramebufferSizeCallback;
+import org.lwjgl.opengl.GL;
+import uk.co.caprica.vlcj.factory.MediaPlayerFactory;
+import uk.co.caprica.vlcj.factory.discovery.NativeDiscovery;
+import uk.co.caprica.vlcj.player.embedded.EmbeddedMediaPlayer;
+import uk.co.caprica.vlcj.player.embedded.videosurface.VideoEngineVideoSurface;
+import uk.co.caprica.vlcj.player.embedded.videosurface.videoengine.VideoEngine;
+import uk.co.caprica.vlcj.player.embedded.videosurface.videoengine.VideoEngineCallback;
+import uk.co.caprica.vlcj.player.embedded.videosurface.videoengine.VideoEngineCallbackAdapter;
+
+import java.util.concurrent.Semaphore;
+
 import static org.lwjgl.glfw.Callbacks.glfwFreeCallbacks;
 import static org.lwjgl.glfw.GLFW.GLFW_FALSE;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE;
@@ -23,38 +38,12 @@ import static org.lwjgl.glfw.GLFW.glfwSetWindowShouldClose;
 import static org.lwjgl.glfw.GLFW.glfwSetWindowSize;
 import static org.lwjgl.glfw.GLFW.glfwShowWindow;
 import static org.lwjgl.glfw.GLFW.glfwSwapBuffers;
-import static org.lwjgl.glfw.GLFW.glfwSwapInterval;
 import static org.lwjgl.glfw.GLFW.glfwTerminate;
 import static org.lwjgl.glfw.GLFW.glfwWindowHint;
 import static org.lwjgl.glfw.GLFW.glfwWindowShouldClose;
-//import static org.lwjgl.opengl.GL11.GL_COLOR_BUFFER_BIT;
-//import static org.lwjgl.opengl.GL11.GL_DEPTH_BUFFER_BIT;
-//import static org.lwjgl.opengl.GL11.glClear;
 import static org.lwjgl.opengl.GL11.glClearColor;
 import static org.lwjgl.opengl.GL11.glViewport;
 import static org.lwjgl.system.MemoryUtil.NULL;
-
-import java.util.concurrent.Semaphore;
-
-import org.lwjgl.Version;
-import org.lwjgl.glfw.GLFWErrorCallback;
-import org.lwjgl.glfw.GLFWFramebufferSizeCallback;
-import org.lwjgl.opengl.GL;
-
-import com.sun.jna.NativeLibrary;
-import com.sun.jna.Pointer;
-
-import uk.co.caprica.vlcj.binding.LibC;
-import uk.co.caprica.vlcj.binding.RuntimeUtil;
-import uk.co.caprica.vlcj.binding.internal.libvlc_video_output_cfg_t;
-import uk.co.caprica.vlcj.binding.internal.libvlc_video_render_cfg_t;
-import uk.co.caprica.vlcj.player.embedded.videosurface.videoengine.VideoEngine;
-import uk.co.caprica.vlcj.factory.MediaPlayerFactory;
-import uk.co.caprica.vlcj.factory.discovery.NativeDiscovery;
-import uk.co.caprica.vlcj.player.embedded.EmbeddedMediaPlayer;
-import uk.co.caprica.vlcj.player.embedded.videosurface.VideoEngineVideoSurface;
-import uk.co.caprica.vlcj.player.embedded.videosurface.videoengine.VideoEngineCallback;
-import uk.co.caprica.vlcj.player.embedded.videosurface.videoengine.VideoEngineCallbackAdapter;
 
 /**
  * Example showing how to use vlcj and the native LibVLC video engine callbacks to render video in an LWJGL application.
@@ -67,12 +56,6 @@ import uk.co.caprica.vlcj.player.embedded.videosurface.videoengine.VideoEngineCa
  * This example was adapted from the HelloWorld example provided in the LWJGL bundle.
  */
 public class VideoEngineCallbackDemo {
-
-    static {
-        String path = "/disks/data/build/install/test";
-        NativeLibrary.addSearchPath(RuntimeUtil.getLibVlcLibraryName(), path);
-        LibC.INSTANCE.setenv("VLC_PLUGIN_PATH", path + "/plugins", 1);
-    }
 
     /**
      * Flag if resize behaviour should be enabled.
@@ -141,8 +124,8 @@ public class VideoEngineCallbackDemo {
         loop();
 
         // We need to make sure the callbacks stop before we disappear, otherwise a fatal JVM crash may occur
-        mediaPlayer.controls().stop();
-        mediaPlayer.videoSurface().set(null);
+        mediaPlayer.release();
+        mediaPlayerFactory.release();
 
         // Free the window callbacks and destroy the window
         glfwFreeCallbacks(window);
@@ -296,13 +279,13 @@ public class VideoEngineCallbackDemo {
         }
 
         @Override
-        public int onUpdateOutput(Pointer opaque, libvlc_video_render_cfg_t renderConfiguration, libvlc_video_output_cfg_t outputConfiguration) {
+        public boolean onUpdateOutput(Pointer opaque, int width, int height) {
             glfwSetWindowPos(window, 10, 10);
-            glfwSetWindowSize(window, renderConfiguration.width, renderConfiguration.height);
+            glfwSetWindowSize(window, width, height);
             if (preserveAspectRatio) {
-                glfwSetWindowAspectRatio(window, renderConfiguration.width, renderConfiguration.height);
+                glfwSetWindowAspectRatio(window, width, height);
             }
-            return 0;
+            return true;
         }
     }
 
@@ -313,8 +296,6 @@ public class VideoEngineCallbackDemo {
      */
     public static void main(String[] args) {
         System.out.println(String.format("LWJGL %s", Version.getVersion()));
-
-        args = new String[] {"/home/mark/sekiro.mp4"};
 
         if (args.length != 1) {
             System.out.println("Specify an MRL to play");
