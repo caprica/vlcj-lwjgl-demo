@@ -6,7 +6,6 @@ import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.glfw.GLFWFramebufferSizeCallback;
 import org.lwjgl.opengl.GL;
 import uk.co.caprica.vlcj.factory.MediaPlayerFactory;
-import uk.co.caprica.vlcj.factory.discovery.NativeDiscovery;
 import uk.co.caprica.vlcj.player.embedded.EmbeddedMediaPlayer;
 import uk.co.caprica.vlcj.player.embedded.videosurface.VideoEngineVideoSurface;
 import uk.co.caprica.vlcj.player.embedded.videosurface.videoengine.VideoEngine;
@@ -106,7 +105,7 @@ public class VideoEngineCallbackDemo {
      * Create a new demo application.
      */
     public VideoEngineCallbackDemo() {
-        this.mediaPlayerFactory = new MediaPlayerFactory((NativeDiscovery) null);
+        this.mediaPlayerFactory = new MediaPlayerFactory();
         this.mediaPlayer = mediaPlayerFactory.mediaPlayers().newEmbeddedMediaPlayer();
         this.videoSurface = mediaPlayerFactory.videoSurfaces().newVideoSurface(VideoEngine.libvlc_video_engine_opengl, videoEngineCallback);
 
