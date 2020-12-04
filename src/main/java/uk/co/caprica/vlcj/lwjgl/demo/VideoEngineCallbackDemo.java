@@ -5,6 +5,7 @@ import org.lwjgl.Version;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.glfw.GLFWFramebufferSizeCallback;
 import org.lwjgl.opengl.GL;
+import uk.co.caprica.vlcj.binding.internal.ReportSizeChanged;
 import uk.co.caprica.vlcj.factory.MediaPlayerFactory;
 import uk.co.caprica.vlcj.player.embedded.EmbeddedMediaPlayer;
 import uk.co.caprica.vlcj.player.embedded.videosurface.VideoEngineVideoSurface;
@@ -25,16 +26,15 @@ import static org.lwjgl.glfw.GLFW.glfwCreateWindow;
 import static org.lwjgl.glfw.GLFW.glfwDefaultWindowHints;
 import static org.lwjgl.glfw.GLFW.glfwDestroyWindow;
 import static org.lwjgl.glfw.GLFW.glfwGetProcAddress;
+import static org.lwjgl.glfw.GLFW.glfwGetWindowSize;
 import static org.lwjgl.glfw.GLFW.glfwInit;
 import static org.lwjgl.glfw.GLFW.glfwMakeContextCurrent;
 import static org.lwjgl.glfw.GLFW.glfwPollEvents;
 import static org.lwjgl.glfw.GLFW.glfwSetErrorCallback;
 import static org.lwjgl.glfw.GLFW.glfwSetFramebufferSizeCallback;
 import static org.lwjgl.glfw.GLFW.glfwSetKeyCallback;
-import static org.lwjgl.glfw.GLFW.glfwSetWindowAspectRatio;
 import static org.lwjgl.glfw.GLFW.glfwSetWindowPos;
 import static org.lwjgl.glfw.GLFW.glfwSetWindowShouldClose;
-import static org.lwjgl.glfw.GLFW.glfwSetWindowSize;
 import static org.lwjgl.glfw.GLFW.glfwShowWindow;
 import static org.lwjgl.glfw.GLFW.glfwSwapBuffers;
 import static org.lwjgl.glfw.GLFW.glfwTerminate;
@@ -102,10 +102,22 @@ public class VideoEngineCallbackDemo {
     private long window;
 
     /**
+     * Reference to a native callback that is invoked whenever the video surface size changes.
+     */
+    private volatile ReportSizeChanged reportSizeChanged;
+
+    /**
+     * Opaque pointer value to associated with the report-size-change callback.
+     * <p>
+     * This value <strong>must</strong> be passed when invoking the callback.
+     */
+    private volatile Pointer reportOpaque;
+
+    /**
      * Create a new demo application.
      */
     public VideoEngineCallbackDemo() {
-        this.mediaPlayerFactory = new MediaPlayerFactory();
+        this.mediaPlayerFactory = new MediaPlayerFactory("--quiet");
         this.mediaPlayer = mediaPlayerFactory.mediaPlayers().newEmbeddedMediaPlayer();
         this.videoSurface = mediaPlayerFactory.videoSurfaces().newVideoSurface(VideoEngine.libvlc_video_engine_opengl, videoEngineCallback);
 
@@ -179,6 +191,11 @@ public class VideoEngineCallbackDemo {
                     }
                     finally {
                         contextSemaphore.release();
+                    }
+
+                    // FIXME there may be a race here as setting the two object references is not synchronized
+                    if (reportSizeChanged != null) {
+                        reportSizeChanged.reportSizeChanged(reportOpaque, width, height);
                     }
                 }
             });
@@ -278,13 +295,21 @@ public class VideoEngineCallbackDemo {
         }
 
         @Override
-        public boolean onUpdateOutput(Pointer opaque, int width, int height) {
-            glfwSetWindowPos(window, 10, 10);
-            glfwSetWindowSize(window, width, height);
-            if (preserveAspectRatio) {
-                glfwSetWindowAspectRatio(window, width, height);
+        public void onSetResizeCallback(Pointer opaque, ReportSizeChanged report_size_change, Pointer report_opaque) {
+            // Stash the callback and the opaque reference - the opaque reference MUST be passed when invoking the
+            // callback
+            reportSizeChanged = report_size_change;
+            reportOpaque = report_opaque;
+
+            // FIXME is it ok to do this here and call back into the native library on this thread, also outside of any
+            //       GLFW context - it seems to work... but it feels like this should be synchronized - in theory it's
+            //       possible that the reportSizeChanged callback could become invalidated while processing this?
+            if (reportSizeChanged != null && window != 0) {
+                int[] w = {0};
+                int[] h = {0};
+                glfwGetWindowSize(window, w, h);
+                reportSizeChanged.reportSizeChanged(report_opaque, w[0], h[0]);
             }
-            return true;
         }
     }
 
