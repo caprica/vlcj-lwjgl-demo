@@ -180,6 +180,9 @@ public class VideoEngineCallbackDemo {
                         }
                         glfwMakeContextCurrent(window);
                     }
+                    catch (InterruptedException e) {
+                        return;
+                    } 
                     catch (Exception e) {
                         glfwMakeContextCurrent(0);
                         contextSemaphore.release();
