@@ -175,7 +175,7 @@ public class VideoEngineCallbackDemo {
                 @Override
                 public void invoke(long window, int width, int height) {
                     try {
-                        if (!contextSemaphore.tryAcquire()) {
+                        if (!contextSemaphore.tryAcquire(1, TimeUnit.SECONDS)) {
                             return;
                         }
                         glfwMakeContextCurrent(window);
