@@ -79,7 +79,7 @@ public class VideoEngineCallbackDemo {
     /**
      * Semaphore used to synchronise the GL context - the context can only be active on one thread at a time.
      */
-    private final Semaphore contextSemaphore = new Semaphore(0);
+    private final Semaphore contextSemaphore = new Semaphore(0, true);
 
     /**
      * Media player factory.
@@ -175,11 +175,10 @@ public class VideoEngineCallbackDemo {
                 @Override
                 public void invoke(long window, int width, int height) {
                     try {
-                        contextSemaphore.acquire();
+                        if (!contextSemaphore.tryAcquire()) {
+                            return;
+                        }
                         glfwMakeContextCurrent(window);
-                    }
-                    catch (InterruptedException e) {
-                        return;
                     }
                     catch (Exception e) {
                         glfwMakeContextCurrent(0);
