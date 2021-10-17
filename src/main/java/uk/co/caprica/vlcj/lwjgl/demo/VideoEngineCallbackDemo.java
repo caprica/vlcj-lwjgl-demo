@@ -182,7 +182,7 @@ public class VideoEngineCallbackDemo {
                     }
                     catch (InterruptedException e) {
                         return;
-                    } 
+                    }
                     catch (Exception e) {
                         glfwMakeContextCurrent(0);
                         contextSemaphore.release();
