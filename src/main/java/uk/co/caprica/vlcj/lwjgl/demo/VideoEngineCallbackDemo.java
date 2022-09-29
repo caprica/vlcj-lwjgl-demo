@@ -5,19 +5,20 @@ import org.lwjgl.Version;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.glfw.GLFWFramebufferSizeCallback;
 import org.lwjgl.opengl.GL;
-import uk.co.caprica.vlcj.binding.internal.ReportSizeChanged;
 import uk.co.caprica.vlcj.factory.MediaPlayerFactory;
 import uk.co.caprica.vlcj.player.embedded.EmbeddedMediaPlayer;
 import uk.co.caprica.vlcj.player.embedded.videosurface.VideoEngineVideoSurface;
 import uk.co.caprica.vlcj.player.embedded.videosurface.videoengine.VideoEngine;
 import uk.co.caprica.vlcj.player.embedded.videosurface.videoengine.VideoEngineCallback;
 import uk.co.caprica.vlcj.player.embedded.videosurface.videoengine.VideoEngineCallbackAdapter;
+import uk.co.caprica.vlcj.player.embedded.videosurface.videoengine.VideoEngineResizeCallback;
 
 import java.util.concurrent.Semaphore;
 
 import static org.lwjgl.glfw.Callbacks.glfwFreeCallbacks;
 import static org.lwjgl.glfw.GLFW.GLFW_FALSE;
 import static org.lwjgl.glfw.GLFW.GLFW_KEY_ESCAPE;
+import static org.lwjgl.glfw.GLFW.GLFW_KEY_SPACE;
 import static org.lwjgl.glfw.GLFW.GLFW_RELEASE;
 import static org.lwjgl.glfw.GLFW.GLFW_RESIZABLE;
 import static org.lwjgl.glfw.GLFW.GLFW_TRUE;
@@ -40,6 +41,9 @@ import static org.lwjgl.glfw.GLFW.glfwSwapBuffers;
 import static org.lwjgl.glfw.GLFW.glfwTerminate;
 import static org.lwjgl.glfw.GLFW.glfwWindowHint;
 import static org.lwjgl.glfw.GLFW.glfwWindowShouldClose;
+import static org.lwjgl.opengl.GL11.GL_COLOR_BUFFER_BIT;
+import static org.lwjgl.opengl.GL11.GL_DEPTH_BUFFER_BIT;
+import static org.lwjgl.opengl.GL11.glClear;
 import static org.lwjgl.opengl.GL11.glClearColor;
 import static org.lwjgl.opengl.GL11.glViewport;
 import static org.lwjgl.system.MemoryUtil.NULL;
@@ -79,7 +83,7 @@ public class VideoEngineCallbackDemo {
     /**
      * Semaphore used to synchronise the GL context - the context can only be active on one thread at a time.
      */
-    private final Semaphore contextSemaphore = new Semaphore(0);
+    private final Semaphore contextSemaphore = new Semaphore(0, true);
 
     /**
      * Media player factory.
@@ -94,7 +98,7 @@ public class VideoEngineCallbackDemo {
     /**
      * Video surface for the media player.
      */
-    private VideoEngineVideoSurface videoSurface;
+    private final VideoEngineVideoSurface videoSurface;
 
     /**
      * Window.
@@ -102,22 +106,19 @@ public class VideoEngineCallbackDemo {
     private long window;
 
     /**
-     * Reference to a native callback that is invoked whenever the video surface size changes.
-     */
-    private volatile ReportSizeChanged reportSizeChanged;
-
-    /**
-     * Opaque pointer value to associated with the report-size-change callback.
+     * Component that manages size-changed callbacks.
      * <p>
-     * This value <strong>must</strong> be passed when invoking the callback.
+     * The application should invoke the setSize method in this component when the size of the OpenGL video
+     * rendering surface changes.
      */
-    private volatile Pointer reportOpaque;
+    private VideoEngineResizeCallback resizeCallback;
 
     /**
      * Create a new demo application.
      */
     public VideoEngineCallbackDemo() {
         this.mediaPlayerFactory = new MediaPlayerFactory("--quiet");
+
         this.mediaPlayer = mediaPlayerFactory.mediaPlayers().newEmbeddedMediaPlayer();
         this.videoSurface = mediaPlayerFactory.videoSurfaces().newVideoSurface(VideoEngine.libvlc_video_engine_opengl, videoEngineCallback);
 
@@ -193,9 +194,8 @@ public class VideoEngineCallbackDemo {
                         contextSemaphore.release();
                     }
 
-                    // FIXME there may be a race here as setting the two object references is not synchronized
-                    if (reportSizeChanged != null) {
-                        reportSizeChanged.reportSizeChanged(reportOpaque, width, height);
+                    if (resizeCallback != null) {
+                        resizeCallback.setSize(width, height);
                     }
                 }
             });
@@ -206,6 +206,10 @@ public class VideoEngineCallbackDemo {
             if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE) {
                 // We will detect this in the rendering loop
                 glfwSetWindowShouldClose(window, true);
+            }
+
+            if (key == GLFW_KEY_SPACE && action == GLFW_RELEASE) {
+                mediaPlayer.controls().pause();
             }
         });
 
@@ -225,16 +229,17 @@ public class VideoEngineCallbackDemo {
         GL.createCapabilities();
 
         // Set the clear colour
-        glClearColor(1.0f, 0.0f, 0.0f, 0.0f);
+        glClearColor(0.0f, 0.0f, 0.0f, 0.0f);
 
         glfwMakeContextCurrent(0L);
         contextSemaphore.release();
 
         // Run the rendering loop until the user has attempted to close the window or has pressed the ESCAPE key
         while (!glfwWindowShouldClose(window)) {
-            // Clear the framebuffer (no need to since the video will render the whole surface every frame)
-//			glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
-//			glfwSwapBuffers(window);
+            // Clear the framebuffer (no need to since the video will render the whole surface every frame?)
+            glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
+
+            glfwSwapBuffers(window);
 
             // Poll for window events - the key callback above will only be invoked during this call
             glfwPollEvents();
@@ -243,8 +248,7 @@ public class VideoEngineCallbackDemo {
             // can and consume 100% of a CPU core
             try {
                 Thread.sleep(1000 / 60);
-            }
-            catch (Exception e) {
+            } catch (Exception e) {
             }
         }
     }
@@ -295,20 +299,27 @@ public class VideoEngineCallbackDemo {
         }
 
         @Override
-        public void onSetResizeCallback(Pointer opaque, ReportSizeChanged report_size_change, Pointer report_opaque) {
-            // Stash the callback and the opaque reference - the opaque reference MUST be passed when invoking the
-            // callback
-            reportSizeChanged = report_size_change;
-            reportOpaque = report_opaque;
+        public void onSetResizeCallback(VideoEngineResizeCallback resizeCallback) {
+            VideoEngineCallbackDemo.this.resizeCallback = resizeCallback;
 
             // FIXME is it ok to do this here and call back into the native library on this thread, also outside of any
             //       GLFW context - it seems to work... but it feels like this should be synchronized - in theory it's
             //       possible that the reportSizeChanged callback could become invalidated while processing this?
-            if (reportSizeChanged != null && window != 0) {
+            if (resizeCallback != null && window != 0) {
                 int[] w = {0};
                 int[] h = {0};
-                glfwGetWindowSize(window, w, h);
-                reportSizeChanged.reportSizeChanged(report_opaque, w[0], h[0]);
+
+                try {
+                    contextSemaphore.acquire();
+                    glfwMakeContextCurrent(window);
+
+                    glfwGetWindowSize(window, w, h);
+                    resizeCallback.setSize(w[0], h[0]);
+                } catch (InterruptedException e) {
+
+                } finally {
+                    contextSemaphore.release();
+                }
             }
         }
     }
