@@ -132,7 +132,7 @@ public class VideoCubeDemo {
     }
 
     private void init() {
-        // Set up an error videocube - the default implementation will print the error message to System.err
+        // Set up an error callback - the default implementation will print the error message to System.err
         GLFWErrorCallback.createPrint(System.err).set();
 
         // Initialize GLFW, most GLFW functions will not work before doing this

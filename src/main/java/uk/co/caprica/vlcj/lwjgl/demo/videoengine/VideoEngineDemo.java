@@ -89,7 +89,7 @@ public class VideoEngineDemo {
     private static VideoEngineDemo app;
 
     /**
-     * Native video engine videocube handler.
+     * Native video engine callback handler.
      */
     private final VideoEngineCallback videoEngineCallback = new VideoEngineHandler();
 
@@ -156,7 +156,7 @@ public class VideoEngineDemo {
         glfwFreeCallbacks(window);
         glfwDestroyWindow(window);
 
-        // Terminate GLFW and free the error videocube
+        // Terminate GLFW and free the error callback
         glfwTerminate();
         glfwSetErrorCallback(null).free();
     }
@@ -165,7 +165,7 @@ public class VideoEngineDemo {
      * Initialise the main window.
      */
     private void init() {
-        // Set up an error videocube - the default implementation will print the error message to System.err
+        // Set up an error callback - the default implementation will print the error message to System.err
         GLFWErrorCallback.createPrint(System.err).set();
 
         // Initialise GLFW - most GLFW functions will not work before doing this
@@ -179,7 +179,7 @@ public class VideoEngineDemo {
         glfwWindowHint(GLFW_RESIZABLE, enableResize ? GLFW_TRUE : GLFW_FALSE);
 
         // Create the window
-        window = glfwCreateWindow(800, 450, "vlcj OpenGL videocube rendering", NULL, NULL);
+        window = glfwCreateWindow(800, 450, "vlcj OpenGL callback rendering", NULL, NULL);
         if (window == NULL) {
             throw new RuntimeException("Failed to create the GLFW window");
         }
@@ -193,7 +193,7 @@ public class VideoEngineDemo {
             });
         }
 
-        // Setup a key videocube - it will be called every time a key is pressed, repeated or released
+        // Setup a key callback - it will be called every time a key is pressed, repeated or released
         glfwSetKeyCallback(window, (window, key, scancode, action, mods) -> {
             if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE) {
                 // We will detect this in the rendering loop
@@ -233,7 +233,7 @@ public class VideoEngineDemo {
 
             glfwSwapBuffers(window);
 
-            // Poll for window events - the key videocube above will only be invoked during this call
+            // Poll for window events - the key callback above will only be invoked during this call
             glfwPollEvents();
 
             // Implement the render/timing loop however you want - if you don't sleep the loop will run as fast as it
@@ -251,7 +251,7 @@ public class VideoEngineDemo {
      * The semaphore may be a bit overkill since in this example the main thread never sets the current context again
      * after it has finished initialisation, however the first acquire at least protects us from a race during startup.
      * <p>
-     * The videocube methods here all execute on a native thread coming from LibVLC.
+     * The callback methods here all execute on a native thread coming from LibVLC.
      */
     private class VideoEngineHandler extends VideoEngineCallbackAdapter {
         @Override
