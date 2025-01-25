@@ -25,3 +25,8 @@ The first `VideoEngineDemo` renders the video into an OpenGL window.
 
 The second `VideoCubeDemo` is somewhat more low-level, and renders video into a dynamically updating texture on the face
 of a cube in a 3D scene.
+
+There are some examples at YouTube:
+
+ - [Multiple texture video cube](https://www.youtube.com/watch?v=4Z94jGUS6o4)
+ - [Single texture video cube](https://www.youtube.com/watch?v=h5MHAt7M-SQ)
