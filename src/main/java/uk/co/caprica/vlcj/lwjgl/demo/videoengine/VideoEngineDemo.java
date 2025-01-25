@@ -1,6 +1,24 @@
-package uk.co.caprica.vlcj.lwjgl.demo;
+/*
+ * This file is part of VLCJ.
+ *
+ * VLCJ is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * VLCJ is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with VLCJ.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * Copyright 2009-2025 Caprica Software Limited.
+ */
 
-import com.sun.jna.Pointer;
+package uk.co.caprica.vlcj.lwjgl.demo.videoengine;
+
 import org.lwjgl.Version;
 import org.lwjgl.glfw.GLFWErrorCallback;
 import org.lwjgl.glfw.GLFWFramebufferSizeCallback;
@@ -11,7 +29,7 @@ import uk.co.caprica.vlcj.player.embedded.videosurface.VideoEngineVideoSurface;
 import uk.co.caprica.vlcj.player.embedded.videosurface.videoengine.VideoEngine;
 import uk.co.caprica.vlcj.player.embedded.videosurface.videoengine.VideoEngineCallback;
 import uk.co.caprica.vlcj.player.embedded.videosurface.videoengine.VideoEngineCallbackAdapter;
-import uk.co.caprica.vlcj.player.embedded.videosurface.videoengine.VideoEngineResizeCallback;
+import uk.co.caprica.vlcj.player.embedded.videosurface.videoengine.VideoEngineWindowCallback;
 
 import java.util.concurrent.Semaphore;
 
@@ -38,6 +56,7 @@ import static org.lwjgl.glfw.GLFW.glfwSetWindowPos;
 import static org.lwjgl.glfw.GLFW.glfwSetWindowShouldClose;
 import static org.lwjgl.glfw.GLFW.glfwShowWindow;
 import static org.lwjgl.glfw.GLFW.glfwSwapBuffers;
+import static org.lwjgl.glfw.GLFW.glfwSwapInterval;
 import static org.lwjgl.glfw.GLFW.glfwTerminate;
 import static org.lwjgl.glfw.GLFW.glfwWindowHint;
 import static org.lwjgl.glfw.GLFW.glfwWindowShouldClose;
@@ -45,20 +64,14 @@ import static org.lwjgl.opengl.GL11.GL_COLOR_BUFFER_BIT;
 import static org.lwjgl.opengl.GL11.GL_DEPTH_BUFFER_BIT;
 import static org.lwjgl.opengl.GL11.glClear;
 import static org.lwjgl.opengl.GL11.glClearColor;
-import static org.lwjgl.opengl.GL11.glViewport;
 import static org.lwjgl.system.MemoryUtil.NULL;
 
 /**
  * Example showing how to use vlcj and the native LibVLC video engine callbacks to render video in an LWJGL application.
  * <p>
- * VLC will always render video at the video's intrinsic size, if we want resize behaviour then we must deal with that
- * here.
- * <p>
- * See {@link #enableResize} and {@link #preserveAspectRatio}.
- * <p>
  * This example was adapted from the HelloWorld example provided in the LWJGL bundle.
  */
-public class VideoEngineCallbackDemo {
+public class VideoEngineDemo {
 
     /**
      * Flag if resize behaviour should be enabled.
@@ -73,10 +86,10 @@ public class VideoEngineCallbackDemo {
     /**
      * This application.
      */
-    private static VideoEngineCallbackDemo app;
+    private static VideoEngineDemo app;
 
     /**
-     * Native video engine callback handler.
+     * Native video engine videocube handler.
      */
     private final VideoEngineCallback videoEngineCallback = new VideoEngineHandler();
 
@@ -106,17 +119,17 @@ public class VideoEngineCallbackDemo {
     private long window;
 
     /**
-     * Component that manages size-changed callbacks.
+     * Component used to send size changed and mouse events via callbacks.
      * <p>
-     * The application should invoke the setSize method in this component when the size of the OpenGL video
-     * rendering surface changes.
+     * The application should invoke methods in this component when the size of the OpenGL video  rendering surface
+     * changes, or when a mouse button is pressed or released.
      */
-    private VideoEngineResizeCallback resizeCallback;
+    private VideoEngineWindowCallback windowCallback;
 
     /**
      * Create a new demo application.
      */
-    public VideoEngineCallbackDemo() {
+    public VideoEngineDemo() {
         this.mediaPlayerFactory = new MediaPlayerFactory("--quiet");
 
         this.mediaPlayer = mediaPlayerFactory.mediaPlayers().newEmbeddedMediaPlayer();
@@ -143,7 +156,7 @@ public class VideoEngineCallbackDemo {
         glfwFreeCallbacks(window);
         glfwDestroyWindow(window);
 
-        // Terminate GLFW and free the error callback
+        // Terminate GLFW and free the error videocube
         glfwTerminate();
         glfwSetErrorCallback(null).free();
     }
@@ -152,7 +165,7 @@ public class VideoEngineCallbackDemo {
      * Initialise the main window.
      */
     private void init() {
-        // Setup an error callback - the default implementation will print the error message to System.err
+        // Set up an error videocube - the default implementation will print the error message to System.err
         GLFWErrorCallback.createPrint(System.err).set();
 
         // Initialise GLFW - most GLFW functions will not work before doing this
@@ -162,11 +175,11 @@ public class VideoEngineCallbackDemo {
 
         // Optionally configure GLFW, the current window hints are already the default
         glfwDefaultWindowHints();
-        glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE); // the window will stay hidden after creation
+        glfwWindowHint(GLFW_VISIBLE, GLFW_FALSE);
         glfwWindowHint(GLFW_RESIZABLE, enableResize ? GLFW_TRUE : GLFW_FALSE);
 
         // Create the window
-        window = glfwCreateWindow(800, 450, "vlcj OpenGL callback rendering", NULL, NULL);
+        window = glfwCreateWindow(800, 450, "vlcj OpenGL videocube rendering", NULL, NULL);
         if (window == NULL) {
             throw new RuntimeException("Failed to create the GLFW window");
         }
@@ -175,33 +188,12 @@ public class VideoEngineCallbackDemo {
             glfwSetFramebufferSizeCallback(window, new GLFWFramebufferSizeCallback() {
                 @Override
                 public void invoke(long window, int width, int height) {
-                    try {
-                        contextSemaphore.acquire();
-                        glfwMakeContextCurrent(window);
-                    }
-                    catch (InterruptedException e) {
-                        return;
-                    }
-                    catch (Exception e) {
-                        glfwMakeContextCurrent(0);
-                        contextSemaphore.release();
-                    }
-                    try {
-                        glViewport(0, 0, width, height);
-                        glfwMakeContextCurrent(0);
-                    }
-                    finally {
-                        contextSemaphore.release();
-                    }
-
-                    if (resizeCallback != null) {
-                        resizeCallback.setSize(width, height);
-                    }
+                    windowCallback.setSize(width, height);
                 }
             });
         }
 
-        // Setup a key callback - it will be called every time a key is pressed, repeated or released
+        // Setup a key videocube - it will be called every time a key is pressed, repeated or released
         glfwSetKeyCallback(window, (window, key, scancode, action, mods) -> {
             if (key == GLFW_KEY_ESCAPE && action == GLFW_RELEASE) {
                 // We will detect this in the rendering loop
@@ -215,7 +207,7 @@ public class VideoEngineCallbackDemo {
 
         glfwSetWindowPos(window, 10, 10);
         glfwMakeContextCurrent(window); // Make the OpenGL context current
-//        glfwSwapInterval(1); // Enable v-sync
+        glfwSwapInterval(1); // Enable v-sync
         glfwShowWindow(window);
     }
 
@@ -241,7 +233,7 @@ public class VideoEngineCallbackDemo {
 
             glfwSwapBuffers(window);
 
-            // Poll for window events - the key callback above will only be invoked during this call
+            // Poll for window events - the key videocube above will only be invoked during this call
             glfwPollEvents();
 
             // Implement the render/timing loop however you want - if you don't sleep the loop will run as fast as it
@@ -259,25 +251,32 @@ public class VideoEngineCallbackDemo {
      * The semaphore may be a bit overkill since in this example the main thread never sets the current context again
      * after it has finished initialisation, however the first acquire at least protects us from a race during startup.
      * <p>
-     * The callback methods here all execute on a native thread coming from LibVLC.
+     * The videocube methods here all execute on a native thread coming from LibVLC.
      */
     private class VideoEngineHandler extends VideoEngineCallbackAdapter {
         @Override
-        public long onGetProcAddress(Pointer opaque, String functionName) {
+        public void onSetWindowCallback(VideoEngineWindowCallback windowCallback) {
+            VideoEngineDemo.this.windowCallback = windowCallback;
+            int[] width = new int[1];
+            int[] height = new int[1];
+            glfwGetWindowSize(window, width, height);
+            windowCallback.setSize(width[0], height[0]);
+        }
+
+        @Override
+        public long onGetProcAddress(Long opaque, String functionName) {
             return glfwGetProcAddress(functionName);
         }
 
         @Override
-        public boolean onMakeCurrent(Pointer opaque, boolean enter) {
+        public boolean onMakeCurrent(Long opaque, boolean enter) {
             if (enter) {
                 try {
                     contextSemaphore.acquire();
                     glfwMakeContextCurrent(window);
-                }
-                catch (InterruptedException e) {
+                } catch (InterruptedException e) {
                     return false;
-                }
-                catch (Exception e) {
+                } catch (Exception e) {
                     glfwMakeContextCurrent(0L);
                     contextSemaphore.release();
                     return false;
@@ -285,8 +284,7 @@ public class VideoEngineCallbackDemo {
             } else {
                 try {
                     glfwMakeContextCurrent(0L);
-                }
-                finally {
+                } finally {
                     contextSemaphore.release();
                 }
             }
@@ -294,33 +292,8 @@ public class VideoEngineCallbackDemo {
         }
 
         @Override
-        public void onSwap(Pointer opaque) {
+        public void onSwap(Long opaque) {
             glfwSwapBuffers(window);
-        }
-
-        @Override
-        public void onSetResizeCallback(VideoEngineResizeCallback resizeCallback) {
-            VideoEngineCallbackDemo.this.resizeCallback = resizeCallback;
-
-            // FIXME is it ok to do this here and call back into the native library on this thread, also outside of any
-            //       GLFW context - it seems to work... but it feels like this should be synchronized - in theory it's
-            //       possible that the reportSizeChanged callback could become invalidated while processing this?
-            if (resizeCallback != null && window != 0) {
-                int[] w = {0};
-                int[] h = {0};
-
-                try {
-                    contextSemaphore.acquire();
-                    glfwMakeContextCurrent(window);
-
-                    glfwGetWindowSize(window, w, h);
-                    resizeCallback.setSize(w[0], h[0]);
-                } catch (InterruptedException e) {
-
-                } finally {
-                    contextSemaphore.release();
-                }
-            }
         }
     }
 
@@ -330,15 +303,14 @@ public class VideoEngineCallbackDemo {
      * @param args command-line arguments
      */
     public static void main(String[] args) {
-        System.out.println(String.format("LWJGL %s", Version.getVersion()));
+        System.out.printf("LWJGL %s%n", Version.getVersion());
 
         if (args.length != 1) {
             System.out.println("Specify an MRL to play");
             System.exit(-1);
         }
 
-        app = new VideoEngineCallbackDemo();
+        app = new VideoEngineDemo();
         app.run(args[0]);
     }
-
 }
