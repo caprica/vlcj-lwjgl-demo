@@ -111,7 +111,7 @@ public class VideoCubeDemo {
     public VideoCubeDemo() {
         mediaPlayerFactory = new MediaPlayerFactory("--no-audio");
         mediaPlayer = mediaPlayerFactory.mediaPlayers().newEmbeddedMediaPlayer();
-        mediaPlayer.videoSurface().set(new CallbackVideoSurface(new CubeBufferFormatCallback(), new CubeRenderFormatCallback(buffer, glBuffer), true, null));
+        mediaPlayer.videoSurface().set(new CallbackVideoSurface(new CubeBufferFormatCallback(), new CubeRenderFormatCallback(buffer, glBuffer), true));
     }
 
     public void run(String[] args) {
