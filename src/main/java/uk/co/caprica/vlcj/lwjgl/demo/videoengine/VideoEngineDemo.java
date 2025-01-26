@@ -25,10 +25,11 @@ import org.lwjgl.glfw.GLFWFramebufferSizeCallback;
 import org.lwjgl.opengl.GL;
 import uk.co.caprica.vlcj.factory.MediaPlayerFactory;
 import uk.co.caprica.vlcj.player.embedded.EmbeddedMediaPlayer;
-import uk.co.caprica.vlcj.player.embedded.videosurface.VideoEngineVideoSurface;
+import uk.co.caprica.vlcj.player.embedded.videosurface.videoengine.VideoEngineVideoSurface;
 import uk.co.caprica.vlcj.player.embedded.videosurface.videoengine.VideoEngine;
 import uk.co.caprica.vlcj.player.embedded.videosurface.videoengine.VideoEngineCallback;
 import uk.co.caprica.vlcj.player.embedded.videosurface.videoengine.VideoEngineCallbackAdapter;
+import uk.co.caprica.vlcj.player.embedded.videosurface.videoengine.VideoEngineVideoSurface;
 import uk.co.caprica.vlcj.player.embedded.videosurface.videoengine.VideoEngineWindowCallback;
 
 import java.util.concurrent.Semaphore;
