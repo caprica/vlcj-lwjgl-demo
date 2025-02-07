@@ -29,7 +29,6 @@ import uk.co.caprica.vlcj.player.embedded.videosurface.videoengine.VideoEngineVi
 import uk.co.caprica.vlcj.player.embedded.videosurface.videoengine.VideoEngine;
 import uk.co.caprica.vlcj.player.embedded.videosurface.videoengine.VideoEngineCallback;
 import uk.co.caprica.vlcj.player.embedded.videosurface.videoengine.VideoEngineCallbackAdapter;
-import uk.co.caprica.vlcj.player.embedded.videosurface.videoengine.VideoEngineVideoSurface;
 import uk.co.caprica.vlcj.player.embedded.videosurface.videoengine.VideoEngineWindowCallback;
 
 import java.util.concurrent.Semaphore;
@@ -134,7 +133,7 @@ public class VideoEngineDemo {
         this.mediaPlayerFactory = new MediaPlayerFactory("--quiet");
 
         this.mediaPlayer = mediaPlayerFactory.mediaPlayers().newEmbeddedMediaPlayer();
-        this.videoSurface = mediaPlayerFactory.videoSurfaces().newVideoSurface(VideoEngine.libvlc_video_engine_opengl, videoEngineCallback);
+        this.videoSurface = mediaPlayerFactory.videoSurfaces().newVideoSurface(VideoEngine.OPENGL, videoEngineCallback);
 
         this.mediaPlayer.videoSurface().set(videoSurface);
     }
